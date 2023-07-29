@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(products.router, prefix="/api/config", tags=["Configurator"])
+app.include_router(products.router, prefix="/api/products", tags=["Configurator"])
 
 
 @app.get("/")

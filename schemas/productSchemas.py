@@ -1,5 +1,11 @@
 from pydantic import BaseModel
-from bson.objectid import ObjectId
+
+
+class PricePlanSchema(BaseModel):
+    plan_name: str
+    total_wish: int
+    price: int
+    period: str
 
 
 class ProductBaseSchema(BaseModel):
@@ -16,6 +22,7 @@ class ProductBaseSchema(BaseModel):
     export_word: str
     export_pdf: str
     export_text: str
+    price_plan: list
 
     class Config:
         populate_by_name = True
