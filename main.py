@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import configs
+from routers import products
 from config import settings
 
 app = FastAPI()
@@ -15,9 +15,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(configs.router, prefix="/api/config", tags=["Configurator"])
+
+app.include_router(products.router, prefix="/api/config", tags=["Configurator"])
 
 
-@app.get("/healthchecker")
-async def healthchecker():
+@app.get("/")
+async def health_checker():
     return {"status": "success"}
