@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from database import Prompts
+from schemas.promptSchemas import PromptBaseSchema
 
 router = APIRouter()
 
@@ -12,5 +13,7 @@ async def get_prompts():
     return {"status": "success"}
 
 
-# @router.post("")
-# async def add_prompt():
+@router.post("/")
+async def add_prompt(prompt: PromptBaseSchema):
+    Prompts.insert_one(prompt.model_dump())
+    return {"status": "success"}

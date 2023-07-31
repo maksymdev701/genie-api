@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+import uuid
 
 
 class PromptBaseSchema(BaseModel):
@@ -7,3 +8,4 @@ class PromptBaseSchema(BaseModel):
     module: str
     prompt_name: str
     order: int
+    prompt: str

@@ -84,3 +84,9 @@ async def update_price(product: productSchemas.PriceUpdateSchema):
             },
             {"$set": product.model_dump()},
         )
+
+
+@router.get("/names")
+async def get_product_names():
+    product_names = Products.distinct("product_name")
+    return {"status": "success", "data": list(product_names)}
