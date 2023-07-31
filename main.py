@@ -6,7 +6,7 @@ from config import settings
 
 app = FastAPI()
 
-origins = [settings.CLIENT_ORIGIN, "http://localhost:3000"]
+origins = [settings.CLIENT_ORIGIN]
 
 app.add_middleware(
     CORSMiddleware,
