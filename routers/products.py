@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException, status
+from bson.objectid import ObjectId
 
 from database import Products
 from schemas import productSchemas
@@ -25,17 +26,54 @@ async def search_product(search_key: str):
             {"product_module": {"$regex": search_key}},
         ]
     }
-    results = Products.find(query, projection={"product_name", "product_module"})
+    results = Products.find(query, projection={"_id", "product_name", "product_module"})
     results = productsEntity(results)
     return {"status": "success", "data": results}
 
 
 @router.post("/")
-async def update_product(product: productSchemas.ProductBaseSchema):
+async def add_product(product: productSchemas.ProductBaseSchema):
     existing_one = Products.find_one(
         {"product_name": product.product_name, "product_module": product.product_module}
     )
-    print(product.source_check)
+    print(product)
+    if existing_one:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Product name and product module have conflicts.",
+        )
+    else:
+        Products.insert_one(product.model_dump())
+    return {"status": "success"}
+
+
+@router.patch("/")
+async def update_product(product: productSchemas.ProductUpdateSchema):
+    print(product.id)
+    data = product.model_dump()
+    del data["id"]
+    existing_one = Products.find_one(
+        {"product_name": product.product_name, "product_module": product.product_module}
+    )
+    if existing_one:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Product name and product module have conflicts.",
+        )
+    else:
+        Products.update_one(
+            {"_id": ObjectId(product.id)},
+            {"$set": data},
+        )
+    return {"status": "success"}
+
+
+@router.patch("/update_price")
+async def update_price(product: productSchemas.PriceUpdateSchema):
+    existing_one = Products.find_one(
+        {"product_name": product.product_name, "product_module": product.product_module}
+    )
+    print(product)
     if not existing_one:
         Products.insert_one(product.model_dump())
     else:
@@ -46,4 +84,3 @@ async def update_product(product: productSchemas.ProductBaseSchema):
             },
             {"$set": product.model_dump()},
         )
-    return {"status": "success"}
