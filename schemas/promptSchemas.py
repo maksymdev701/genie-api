@@ -3,8 +3,8 @@ import uuid
 
 
 class PromptBaseSchema(BaseModel):
-    products: str
-    plans: str
+    product: str
+    plan: str
     module: str
     prompt_name: str
     order: int
