@@ -1,5 +1,4 @@
-from pydantic import BaseModel, Field
-import uuid
+from pydantic import BaseModel
 
 
 class PromptBaseSchema(BaseModel):
