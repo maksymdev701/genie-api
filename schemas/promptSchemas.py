@@ -8,3 +8,10 @@ class PromptBaseSchema(BaseModel):
     prompt_name: str
     order: int
     prompt: str
+
+
+class RunPromptSchema(BaseModel):
+    product_name: str
+    product_module: str
+    prompt_name: str
+    code: str
