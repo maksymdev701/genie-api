@@ -7,8 +7,6 @@ class Settings(BaseSettings):
 
     CLIENT_ORIGIN: str
 
-    OPENAI_API_KEY: str
-
     class Config:
         env_file = "./.env"
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from bson.objectid import ObjectId
 from pymongo import ASCENDING
 import openai
+import asyncio
 
 from database import Prompts, Products
 from schemas.promptSchemas import PromptBaseSchema, RunPromptSchema
@@ -103,28 +104,53 @@ async def get_prompt_from_products(product_name: str, product_module: str):
     return {"status": "success", "data": list(prompts)}
 
 
+async def dispatch_openai_requests(
+    model: str, prompts: list[str], code: str
+) -> list[str]:
+    """Dispatches requests to OpenAI API asynchronously.
+
+    Args:
+        prompts: List of prompts to be sent to OpenAI ChatCompletion API.
+        model: OpenAI model to use.
+    Returns:
+        List of responses from OpenAI API.
+    """
+    async_responses = [
+        openai.ChatCompletion.acreate(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are CodeGenie that helps people with code.",
+                },
+                {
+                    "role": "user",
+                    "content": f"{prompt}\n\n++++++++++++++++++++\n\n{code}\n\n++++++++++++++++++++",
+                },
+            ],
+            temperature=0,
+        )
+        for prompt in prompts
+    ]
+    return await asyncio.gather(*async_responses)
+
+
 @router.post("/run")
-async def run_prompt(info: RunPromptSchema):
+def run_prompt(info: RunPromptSchema):
     product = Products.find_one(
         {"product_name": info.product_name, "product_module": info.product_module}
     )
-    prompt = Prompts.find_one(
-        {"product_id": product["_id"], "prompt_name": info.prompt_name}
+    prompts = Prompts.find({"product_id": product["_id"]})
+    prompts = list(prompts)
+    prompt_list = []
+    for prompt in prompts:
+        prompt_list.append(prompt["prompt"])
+    predictions = asyncio.run(
+        dispatch_openai_requests(
+            model="gpt-3.5-turbo", prompts=prompt_list, code=info.code
+        )
     )
-    print(prompt)
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": "You are CodeGenie that helps people with code.",
-            },
-            {
-                "role": "user",
-                "content": f"{prompt['prompt']}\n\n++++++++++++++++++++\n\n{info.code}\n\n++++++++++++++++++++",
-            },
-        ],
-    )
-    reply = completion.choices[0].message.content
+    reply = {}
+    for i, prediction in enumerate(predictions):
+        reply[prompts[i]["prompt_name"]] = prediction.choices[0].message.content
     return {"status": "success", "msg": reply}

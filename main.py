@@ -4,8 +4,9 @@ import openai
 
 from routers import products, prompts
 from config import settings
+import os
 
-openai.api_key = settings.OPENAI_API_KEY
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 app = FastAPI()
 

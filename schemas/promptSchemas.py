@@ -13,5 +13,4 @@ class PromptBaseSchema(BaseModel):
 class RunPromptSchema(BaseModel):
     product_name: str
     product_module: str
-    prompt_name: str
     code: str
