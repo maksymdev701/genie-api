@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, Response, Depends
+from fastapi import APIRouter, HTTPException, status, Response, Depends, Body
 from datetime import datetime, timedelta
 from random import randbytes
 import hashlib
+from typing import Annotated
 
 from schemas.userSchemas import SocialSignupSchema, UserSignupSchema, UserSigninSchema
 from database import Users
@@ -29,7 +30,7 @@ async def social_signup(social_data: SocialSignupSchema):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="User already exists"
             )
-    user_info = social_data.model_dump()
+    user_info = social_data.dict()
     user_info["role"] = "user"
     user_info["verified"] = True
     user_info["created_at"] = datetime.utcnow()
@@ -49,7 +50,7 @@ async def signup_user(payload: UserSignupSchema):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="User already exists"
         )
-    user_info = payload.model_dump()
+    user_info = payload.dict()
     del user_info["passwordConfirm"]
     user_info["role"] = "user"
     user_info["verified"] = False
@@ -73,9 +74,9 @@ async def signup_user(payload: UserSignupSchema):
             },
         )
         print(token.hex())
-        await VerifyEmail(
-            new_user["name"], token.hex(), [payload.email]
-        ).sendVerificationCode()
+        # await VerifyEmail(
+        #     new_user["name"], token.hex(), [payload.email]
+        # ).sendVerificationCode()
     except Exception as error:
         print(error)
         Users.find_one_and_update(
@@ -168,3 +169,26 @@ async def user_signin(
         "role": db_user["role"],
         "verified": db_user["verified"],
     }
+
+@router.patch('/verify')
+async def verify_email(code: Annotated[str, Body(..., embed=True)]):
+    hashedCode = hashlib.sha256()
+    hashedCode.update(bytes.fromhex(code))
+    verification_code = hashedCode.hexdigest()
+    result = Users.find_one_and_update(
+        {"verification_code": verification_code},
+        {
+            "$set": {
+                "verification_code": None,
+                "verified": True,
+                "updated_at": datetime.utcnow(),
+            }
+        },
+        new=True,
+    )
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid verification code",
+        )
+    return {"status": "success", "message": "Verified Successfully"}
