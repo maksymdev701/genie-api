@@ -74,9 +74,9 @@ async def signup_user(payload: UserSignupSchema):
             },
         )
         print(token.hex())
-        # await VerifyEmail(
-        #     new_user["name"], token.hex(), [payload.email]
-        # ).sendVerificationCode()
+        await VerifyEmail(
+            new_user["name"], token.hex(), [payload.email]
+        ).sendVerificationCode()
     except Exception as error:
         print(error)
         Users.find_one_and_update(
