@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import openai
 
-from routers import products, prompts, auth
+from routers import products, prompts, auth, user
 from config import settings
 import os
 
@@ -23,6 +23,7 @@ app.add_middleware(
 app.include_router(products.router, prefix="/api/products", tags=["Products"])
 app.include_router(prompts.router, prefix="/api/prompts", tags=["Prompts"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+app.include_router(user.router, prefix="/api/users", tags=["Users"])
 
 
 @app.get("/")

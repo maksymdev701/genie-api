@@ -33,6 +33,7 @@ async def social_signup(social_data: SocialSignupSchema):
     user_info = social_data.dict()
     user_info["role"] = "user"
     user_info["verified"] = True
+    user_info["email"] = None
     user_info["created_at"] = datetime.utcnow()
     user_info["updated_at"] = user_info["created_at"]
     Users.insert_one(user_info)
@@ -54,6 +55,8 @@ async def signup_user(payload: UserSignupSchema):
     del user_info["passwordConfirm"]
     user_info["role"] = "user"
     user_info["verified"] = False
+    user_info["provider"] = "normal"
+    user_info["username"] = None
     user_info["created_at"] = datetime.utcnow()
     user_info["updated_at"] = user_info["created_at"]
     user_info["password"] = utils.hash_password(payload.password)
@@ -170,7 +173,8 @@ async def user_signin(
         "verified": db_user["verified"],
     }
 
-@router.patch('/verify')
+
+@router.patch("/verify")
 async def verify_email(code: Annotated[str, Body(..., embed=True)]):
     hashedCode = hashlib.sha256()
     hashedCode.update(bytes.fromhex(code))
