@@ -14,30 +14,76 @@ from config import settings
 router = APIRouter()
 
 
-@router.post("/signup/social")
-async def social_signup(social_data: SocialSignupSchema):
+@router.post("/social")
+async def social_signup(
+    social_data: SocialSignupSchema, response: Response, Authorize: AuthJWT = Depends()
+):
     if social_data.provider == "google":
-        existing = Users.find_one({"email": social_data.email})
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="User already exists"
-            )
+        db_user = Users.find_one({"email": social_data.email})
     if social_data.provider == "github":
-        existing = Users.find_one(
+        db_user = Users.find_one(
             {"provider": "github", "username": social_data.username}
         )
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="User already exists"
-            )
-    user_info = social_data.dict()
-    user_info["role"] = "user"
-    user_info["verified"] = True
-    user_info["email"] = None
-    user_info["created_at"] = datetime.utcnow()
-    user_info["updated_at"] = user_info["created_at"]
-    Users.insert_one(user_info)
-    return {"status": "success", "message": "User created successfully"}
+    if not db_user:
+        user_info = social_data.dict()
+        user_info["role"] = "user"
+        user_info["verified"] = True
+        user_info["email"] = None
+        user_info["created_at"] = datetime.utcnow()
+        user_info["updated_at"] = user_info["created_at"]
+        Users.insert_one(user_info)
+
+    # Create access token
+    access_token = Authorize.create_access_token(
+        subject=str(db_user["_id"]),
+        expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN),
+    )
+
+    # Create refresh token
+    refresh_token = Authorize.create_refresh_token(
+        subject=str(db_user["_id"]),
+        expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN),
+    )
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=ACCESS_TOKEN_EXPIRES_IN * 60,
+        expires=ACCESS_TOKEN_EXPIRES_IN * 60,
+        path="/",
+        domain=None,
+        secure=True,
+        httponly=True,
+        samesite="none",
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        max_age=REFRESH_TOKEN_EXPIRES_IN * 60,
+        expires=REFRESH_TOKEN_EXPIRES_IN * 60,
+        path="/",
+        domain=None,
+        secure=True,
+        httponly=True,
+        samesite="none",
+    )
+    response.set_cookie(
+        key="logged_in",
+        value="True",
+        max_age=ACCESS_TOKEN_EXPIRES_IN * 60,
+        expires=ACCESS_TOKEN_EXPIRES_IN * 60,
+        path="/",
+        domain=None,
+        secure=True,
+        httponly=True,
+        samesite="none",
+    )
+
+    # Send both access
+    return {
+        "access_token": access_token,
+        "role": db_user["role"],
+    }
 
 
 @router.post("/signup")

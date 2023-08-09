@@ -42,13 +42,13 @@ async def add_product(product: productSchemas.ProductBaseSchema):
             detail="Product name and product module have conflicts.",
         )
     else:
-        Products.insert_one(product.model_dump())
+        Products.insert_one(product.dict())
     return {"status": "success"}
 
 
 @router.patch("/")
 async def update_product(product: productSchemas.ProductUpdateSchema):
-    data = product.model_dump()
+    data = product.dict()
     del data["id"]
     Products.update_one(
         {"_id": ObjectId(product.id)},
@@ -64,14 +64,14 @@ async def update_price(product: productSchemas.PriceUpdateSchema):
     )
     print(product)
     if not existing_one:
-        Products.insert_one(product.model_dump())
+        Products.insert_one(product.dict())
     else:
         Products.update_one(
             {
                 "product_name": product.product_name,
                 "product_module": product.product_module,
             },
-            {"$set": product.model_dump()},
+            {"$set": product.dict()},
         )
 
 
