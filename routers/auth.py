@@ -28,10 +28,10 @@ async def social_signup(
         user_info = social_data.dict()
         user_info["role"] = "user"
         user_info["verified"] = True
-        user_info["email"] = None
         user_info["created_at"] = datetime.utcnow()
         user_info["updated_at"] = user_info["created_at"]
-        Users.insert_one(user_info)
+        result = Users.insert_one(user_info)
+        db_user = Users.find_one({"_id": result.inserted_id})
 
     # Create access token
     access_token = Authorize.create_access_token(

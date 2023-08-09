@@ -6,6 +6,7 @@ class SocialSignupSchema(BaseModel):
     provider: str
     email: EmailStr | None = None
     username: str | None = None
+    name: str
 
 
 class UserSignupSchema(BaseModel):
