@@ -10,7 +10,7 @@ openai.api_key = os.environ["OPENAI_API_KEY"]
 
 app = FastAPI()
 
-origins = [settings.CLIENT_ORIGIN]
+origins = [settings.CLIENT_ORIGIN, "https://main.d1l17mtvn7i9t6.amplifyapp.com"]
 
 app.add_middleware(
     CORSMiddleware,
