@@ -3,11 +3,13 @@ from datetime import datetime, timedelta
 from random import randbytes
 import hashlib
 from typing import Annotated
+from pydantic import EmailStr
 
 from schemas.userSchemas import SocialSignupSchema, UserSignupSchema, UserSigninSchema
 from database import Users
 import utils
 from emails.verifyEmail import VerifyEmail
+from emails.forgotEmail import ForgotEmail
 from oauth2 import AuthJWT, require_user
 from config import settings
 
@@ -242,3 +244,35 @@ async def verify_email(code: Annotated[str, Body(..., embed=True)]):
             detail="Invalid verification code",
         )
     return {"status": "success", "message": "Verified Successfully"}
+
+
+@router.patch("/forgot")
+async def reset_password(email: str = Body(..., embed=True)):
+    user = Users.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No account with this email."
+        )
+
+    generated_password = randbytes(10).hex()
+    Users.find_one_and_update(
+        {"email": email},
+        {
+            "$set": {
+                "password": utils.hash_password(generated_password),
+                "updated_at": datetime.utcnow(),
+            }
+        },
+    )
+
+    try:
+        await ForgotEmail(
+            user["name"], generated_password, [EmailStr(email)]
+        ).sendResetPassword()
+    except Exception as error:
+        print(error)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="There was an error sending email",
+        )
+    return {"status": "success"}
